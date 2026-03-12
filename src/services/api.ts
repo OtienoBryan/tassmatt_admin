@@ -213,21 +213,40 @@ class AdminApiService {
       if (!response.ok) {
         const errorText = await response.text()
         console.error(`HTTP error! status: ${response.status}, body: ${errorText}`)
-        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
+        
+        // Try to parse JSON error response
+        let errorMessage = 'An error occurred'
+        try {
+          const errorJson = JSON.parse(errorText)
+          errorMessage = errorJson.message || errorJson.error || errorMessage
+        } catch {
+          // If not JSON, use the text as-is
+          errorMessage = errorText || `HTTP error! status: ${response.status}`
+        }
+        
+        const error = new Error(errorMessage)
+        ;(error as any).status = response.status
+        ;(error as any).response = errorText
+        throw error
       }
 
       const data = await response.json()
       console.log('Admin API response:', data)
       return data
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Admin API request failed for ${endpoint}:`, error)
-      throw error
+      // Re-throw with proper message if it's already our formatted error
+      if (error.message && !error.message.includes('HTTP error!')) {
+        throw error
+      }
+      // Otherwise, wrap it
+      throw new Error(error?.message || 'Request failed')
     }
   }
 
   // Authentication
-  async login(email: string, password: string): Promise<{ token: string; user: User }> {
-    const response = await this.request<{ token: string; user: User }>('/auth/admin/login', {
+  async login(email: string, password: string): Promise<{ token: string; staff: any; user: any }> {
+    const response = await this.request<{ token: string; staff: any; user: any }>('/auth/admin/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })

@@ -37,17 +37,33 @@ const Login: React.FC = () => {
       <div className="max-w-md w-full space-y-8 p-8">
         <div className="admin-card rounded-2xl shadow-2xl p-8">
           <div className="text-center">
-            <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-6">
-              <Lock className="h-8 w-8 text-white" />
+            <div className="mx-auto mb-6 flex justify-center">
+              <img 
+                src="/logo.png" 
+                alt="Tassmatt Logo" 
+                className="h-20 w-auto object-contain"
+              />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h2>
-            <p className="text-gray-600">Sign in to manage your drinks store</p>
           </div>
           
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                {error}
+              <div className="bg-red-50 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg shadow-sm">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-500 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-sm font-semibold text-red-800 mb-1">
+                      Login Failed
+                    </h3>
+                    <p className="text-sm text-red-700">
+                      {error}
+                    </p>
+                  </div>
+                </div>
               </div>
             )}
             
@@ -65,7 +81,7 @@ const Login: React.FC = () => {
                   type="email"
                   required
                   className="admin-input w-full pl-10 pr-4 py-3 rounded-lg focus:outline-none"
-                  placeholder="admin@drinks.com"
+                  placeholder="Email Address"
                   value={formData.email}
                   onChange={handleChange}
                 />
@@ -101,12 +117,6 @@ const Login: React.FC = () => {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Demo credentials: admin@drinks.com / admin123
-            </p>
-          </div>
         </div>
       </div>
     </div>

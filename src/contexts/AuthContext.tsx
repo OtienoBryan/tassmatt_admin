@@ -39,40 +39,93 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const token = localStorage.getItem('adminToken')
     
     if (token) {
-      // In a real app, you'd validate the token with the server
-      // For now, we'll just set a mock user
-      const mockUser = {
-        id: 1,
-        email: 'admin@drinks.com',
-        firstName: 'Admin',
-        lastName: 'User',
-        role: 'admin' as const
+      // Validate token with server
+      const validateToken = async () => {
+        try {
+          const { adminApiService } = await import('../services/api')
+          adminApiService.setAuthToken(token)
+          
+          // Try to get current user info
+          const response = await fetch('/api/auth/admin/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          })
+          
+          if (response.ok) {
+            const staff = await response.json()
+            const user: User = {
+              id: staff.id,
+              email: staff.email,
+              firstName: staff.firstName,
+              lastName: staff.lastName,
+              role: staff.role === 'admin' ? 'admin' : 'user'
+            }
+            setUser(user)
+          } else {
+            // Token invalid, remove it
+            localStorage.removeItem('adminToken')
+          }
+        } catch (error) {
+          // Token validation failed, remove it
+          localStorage.removeItem('adminToken')
+        } finally {
+          setLoading(false)
+        }
       }
-      setUser(mockUser)
+      
+      validateToken()
+    } else {
+      setLoading(false)
     }
-    setLoading(false)
   }, [])
 
   const login = async (email: string, password: string) => {
     try {
-      // Mock login - in a real app, this would call your API
-      if (email === 'admin@drinks.com' && password === 'admin123') {
-        const mockUser: User = {
-          id: 1,
-          email,
-          firstName: 'Admin',
-          lastName: 'User',
-          role: 'admin'
+      // Import adminApiService dynamically to avoid circular dependencies
+      const { adminApiService } = await import('../services/api')
+      
+      const response = await adminApiService.login(email, password)
+      
+      if (response.token && response.staff) {
+        const user: User = {
+          id: response.staff.id,
+          email: response.staff.email,
+          firstName: response.staff.firstName,
+          lastName: response.staff.lastName,
+          role: response.staff.role === 'admin' ? 'admin' : 'user'
         }
         
-        const mockToken = 'mock-admin-token'
-        localStorage.setItem('adminToken', mockToken)
-        setUser(mockUser)
+        localStorage.setItem('adminToken', response.token)
+        setUser(user)
       } else {
-        throw new Error('Invalid credentials')
+        throw new Error('Invalid response from server')
       }
-    } catch (error) {
-      throw error
+    } catch (error: any) {
+      // Extract error message from API response
+      let errorMessage = 'Login failed. Please check your credentials.'
+      
+      if (error?.message) {
+        errorMessage = error.message
+      } else if (typeof error === 'string') {
+        errorMessage = error
+      }
+      
+      // Clean up error message if it contains JSON
+      if (errorMessage.includes('{') && errorMessage.includes('}')) {
+        try {
+          const jsonMatch = errorMessage.match(/\{.*\}/)
+          if (jsonMatch) {
+            const errorJson = JSON.parse(jsonMatch[0])
+            errorMessage = errorJson.message || errorJson.error || errorMessage
+          }
+        } catch {
+          // If parsing fails, use the original message
+        }
+      }
+      
+      throw new Error(errorMessage)
     }
   }
 
