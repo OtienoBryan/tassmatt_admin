@@ -264,6 +264,15 @@ class AdminApiService {
     localStorage.removeItem('adminToken')
   }
 
+  setAuthToken(token: string): void {
+    this.authToken = token
+    localStorage.setItem('adminToken', token)
+  }
+
+  getAuthToken(): string | null {
+    return this.authToken
+  }
+
   // Categories Management
   async getCategories(): Promise<Category[]> {
     if (USE_MOCK_DATA) {
