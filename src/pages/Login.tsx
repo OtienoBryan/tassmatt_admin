@@ -40,7 +40,7 @@ const Login: React.FC = () => {
             <div className="mx-auto mb-6 flex justify-center">
               <img 
                 src="/logo.png" 
-                alt="Tassmatt Logo" 
+                alt="Tassmatt Logos" 
                 className="h-20 w-auto object-contain"
               />
             </div>
