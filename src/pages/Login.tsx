@@ -57,11 +57,16 @@ const Login: React.FC = () => {
                   </div>
                   <div className="ml-3 flex-1">
                     <h3 className="text-sm font-semibold text-red-800 mb-1">
-                      Login Failed
+                      {error.includes('connect') || error.includes('502') ? 'Connection Error' : 'Login Failed'}
                     </h3>
                     <p className="text-sm text-red-700">
                       {error}
                     </p>
+                    {(error.includes('connect') || error.includes('502')) && (
+                      <p className="text-xs text-red-600 mt-2">
+                        Please check if the backend server is running and accessible.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

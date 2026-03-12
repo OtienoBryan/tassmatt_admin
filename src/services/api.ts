@@ -214,6 +214,14 @@ class AdminApiService {
         const errorText = await response.text()
         console.error(`HTTP error! status: ${response.status}, body: ${errorText}`)
         
+        // Handle 502 Bad Gateway specifically
+        if (response.status === 502) {
+          const error = new Error('Unable to connect to the server. Please check if the backend server is running and accessible.')
+          ;(error as any).status = 502
+          ;(error as any).code = 'BACKEND_CONNECTION_ERROR'
+          throw error
+        }
+        
         // Try to parse JSON error response
         let errorMessage = 'An error occurred'
         try {
@@ -221,7 +229,11 @@ class AdminApiService {
           errorMessage = errorJson.message || errorJson.error || errorMessage
         } catch {
           // If not JSON, use the text as-is
-          errorMessage = errorText || `HTTP error! status: ${response.status}`
+          if (errorText.includes('ROUTER_EXTERNAL_TARGET_CONNECTION_ERROR')) {
+            errorMessage = 'Unable to connect to the backend server. The server may be down or unreachable.'
+          } else {
+            errorMessage = errorText || `HTTP error! status: ${response.status}`
+          }
         }
         
         const error = new Error(errorMessage)
