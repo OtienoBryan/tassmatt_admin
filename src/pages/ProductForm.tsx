@@ -28,7 +28,7 @@ const ProductForm: React.FC = () => {
     isFeatured: false,
     isPopular: false,
     requiresAgeVerification: false,
-    categoryId: ''
+    categoryIds: [] as string[]
   })
 
   useEffect(() => {
@@ -44,9 +44,13 @@ const ProductForm: React.FC = () => {
       if (isEditing && id) {
         const product = await adminApiService.getProductById(parseInt(id))
         if (product) {
-          // Handle categoryId from either direct property or nested category object
-          const categoryId = product.categoryId || (product.category as any)?.id || ''
-          
+          const categoryIds =
+            (product.categoryIds && product.categoryIds.length > 0)
+              ? product.categoryIds.map(String)
+              : (product.categories && product.categories.length > 0)
+                ? product.categories.map((c: any) => String(c.id))
+                : (product.categoryId ? [String(product.categoryId)] : [])
+
           const formData = {
             name: product.name || '',
             description: product.description || '',
@@ -60,9 +64,9 @@ const ProductForm: React.FC = () => {
             isFeatured: product.isFeatured !== undefined ? product.isFeatured : false,
             isPopular: product.isPopular !== undefined ? product.isPopular : false,
             requiresAgeVerification: product.requiresAgeVerification !== undefined ? product.requiresAgeVerification : false,
-            categoryId: categoryId ? String(categoryId) : ''
+            categoryIds
           }
-          console.log('Loading product for edit:', { product, categoryId, formData })
+          console.log('Loading product for edit:', { product, categoryIds, formData })
           setFormData(formData)
           
           if (product.image) {
@@ -87,15 +91,16 @@ const ProductForm: React.FC = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
     const checked = (e.target as HTMLInputElement).checked
-    
-    if (name === 'categoryId') {
-      console.log('Category changed:', { name, value, prevCategoryId: formData.categoryId })
-    }
-    
+
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
+  }
+
+  const handleCategoryIdsChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = Array.from(e.target.selectedOptions).map(opt => opt.value)
+    setFormData(prev => ({ ...prev, categoryIds: selected }))
   }
 
 
@@ -124,14 +129,17 @@ const ProductForm: React.FC = () => {
         return
       }
 
-      if (!formData.categoryId) {
-        alert('Please select a category for this product.')
+      if (!formData.categoryIds || formData.categoryIds.length === 0) {
+        alert('Please select at least one category for this product.')
         return
       }
 
-      const categoryIdNum = parseInt(formData.categoryId)
-      if (isNaN(categoryIdNum)) {
-        alert('Invalid category selected. Please select a valid category.')
+      const categoryIdsNum = formData.categoryIds
+        .map(v => parseInt(v))
+        .filter(v => !isNaN(v) && v > 0)
+
+      if (categoryIdsNum.length === 0) {
+        alert('Invalid categories selected. Please select valid categories.')
         return
       }
 
@@ -140,7 +148,9 @@ const ProductForm: React.FC = () => {
         price: parseFloat(formData.price) || 0,
         originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
         stock: formData.stockStatus === 'in_stock' ? 100 : 0,
-        categoryId: categoryIdNum,
+        // Backend uses `categoryId` as primary category; `categoryIds[]` powers multi-category filtering.
+        categoryId: categoryIdsNum[0],
+        categoryIds: categoryIdsNum,
         volume: '',
         rating: 0,
         reviewCount: 0,
@@ -212,26 +222,25 @@ const ProductForm: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Category *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Categories *</label>
               <select
-                key={`category-select-${formData.categoryId}`}
-                name="categoryId"
-                value={formData.categoryId || ''}
-                onChange={(e) => {
-                  console.log('Select onChange triggered:', e.target.value)
-                  handleInputChange(e)
-                }}
+                name="categoryIds"
+                multiple
+                value={formData.categoryIds}
+                onChange={handleCategoryIdsChange}
                 className="admin-input w-full px-3 py-2 text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
+                style={{ minHeight: 120 }}
               >
-                <option value="">Select Category</option>
                 {categories.map(cat => (
                   <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
                 ))}
               </select>
-              {isEditing && formData.categoryId && (
+              {isEditing && formData.categoryIds.length > 0 && (
                 <p className="text-xs text-gray-500 mt-1">
-                  Current: {categories.find(c => String(c.id) === formData.categoryId)?.name || `ID: ${formData.categoryId}`}
+                  Selected: {formData.categoryIds
+                    .map(cid => categories.find(c => String(c.id) === cid)?.name)
+                    .filter(Boolean)
+                    .join(', ')}
                 </p>
               )}
             </div>

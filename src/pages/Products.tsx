@@ -57,7 +57,10 @@ const Products: React.FC = () => {
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.brand.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = !selectedCategory || product.categoryId.toString() === selectedCategory
+    const matchesCategory =
+      !selectedCategory ||
+      product.categoryId.toString() === selectedCategory ||
+      product.categories?.some(c => String(c.id) === selectedCategory)
     return matchesSearch && matchesCategory
   })
 
@@ -175,7 +178,14 @@ const Products: React.FC = () => {
                   </td>
                   <td className="px-4 py-3">
                     <p className="text-xs text-gray-700">
-                      {product.category?.name || 'N/A'}
+                      {(() => {
+                        const categoryNames = [
+                          ...(product.categories?.map(c => c.name) || []),
+                        ]
+                        const primary = product.category?.name || categoryNames[0] || 'N/A'
+                        const extraCount = Math.max(0, categoryNames.length - 1)
+                        return extraCount > 0 ? `${primary} (+${extraCount})` : primary
+                      })()}
                     </p>
                   </td>
                   <td className="px-4 py-3">

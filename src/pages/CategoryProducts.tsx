@@ -39,7 +39,10 @@ const CategoryProducts: React.FC = () => {
       const foundCategory = categoriesData.find(cat => cat.id === Number(id))
       if (foundCategory) {
         setCategory(foundCategory)
-        const categoryProducts = allProducts.filter(product => product.categoryId === foundCategory.id)
+        const categoryProducts = allProducts.filter(product =>
+          product.categoryId === foundCategory.id ||
+          product.categories?.some(c => c.id === foundCategory.id)
+        )
         setProducts(categoryProducts)
         setFilteredProducts(categoryProducts)
       }

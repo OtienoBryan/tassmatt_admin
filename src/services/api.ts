@@ -65,6 +65,9 @@ export interface Product {
   requiresAgeVerification: boolean
   category: Category
   categoryId: number
+  // Multi-category support
+  categories?: Category[]
+  categoryIds?: number[]
   subcategory?: SubCategory
   subcategoryId?: number
   createdAt: string
@@ -441,13 +444,25 @@ class AdminApiService {
   async createProduct(productData: Omit<Product, 'id' | 'createdAt' | 'updatedAt' | 'category'>): Promise<Product> {
     if (USE_MOCK_DATA) {
       await new Promise(resolve => setTimeout(resolve, 500))
-      const category = mockCategories.find(c => c.id === productData.categoryId)
+      const categoryIds =
+        productData.categoryIds && productData.categoryIds.length > 0
+          ? productData.categoryIds
+          : (productData.categoryId ? [productData.categoryId] : [])
+
+      const primaryCategoryId = categoryIds[0]
+      const category = mockCategories.find(c => c.id === primaryCategoryId)
       if (!category) throw new Error('Category not found')
+      const categories = categoryIds
+        .map(id => mockCategories.find(c => c.id === id))
+        .filter(Boolean) as Category[]
       
       const newProduct = {
         ...productData,
         id: Math.max(...mockProducts.map(p => p.id)) + 1,
         category,
+        categories,
+        categoryIds,
+        categoryId: primaryCategoryId,
         images: productData.images || [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -476,15 +491,27 @@ class AdminApiService {
       await new Promise(resolve => setTimeout(resolve, 500))
       const index = mockProducts.findIndex(p => p.id === id)
       if (index === -1) throw new Error('Product not found')
-      
-      const category = productData.categoryId ? 
-        mockCategories.find(c => c.id === productData.categoryId) || mockProducts[index].category :
-        mockProducts[index].category
+
+      const categoryIds =
+        productData.categoryIds && productData.categoryIds.length > 0
+          ? productData.categoryIds
+          : (productData.categoryId ? [productData.categoryId] : mockProducts[index].categoryId ? [mockProducts[index].categoryId] : [])
+
+      const primaryCategoryId = categoryIds[0]
+      const category =
+        mockCategories.find(c => c.id === primaryCategoryId) || mockProducts[index].category
+
+      const categories = categoryIds
+        .map(cid => mockCategories.find(c => c.id === cid))
+        .filter(Boolean) as Category[]
       
       mockProducts[index] = { 
         ...mockProducts[index], 
         ...productData, 
         category,
+        categories,
+        categoryIds,
+        categoryId: primaryCategoryId,
         updatedAt: new Date().toISOString() 
       }
       return mockProducts[index]
