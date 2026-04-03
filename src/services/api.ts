@@ -505,16 +505,17 @@ class AdminApiService {
         .map(cid => mockCategories.find(c => c.id === cid))
         .filter(Boolean) as Category[]
       
-      mockProducts[index] = { 
-        ...mockProducts[index], 
-        ...productData, 
+      const updated: Product = {
+        ...mockProducts[index],
+        ...productData,
         category,
         categories,
         categoryIds,
         categoryId: primaryCategoryId,
-        updatedAt: new Date().toISOString() 
+        updatedAt: new Date().toISOString(),
       }
-      return mockProducts[index]
+      mockProducts[index] = updated as (typeof mockProducts)[number]
+      return updated
     }
     
     console.log('  Making API request to PUT /admin/products/' + id)
